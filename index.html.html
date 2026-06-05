@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerenciador de Tarefas — m_versity</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root {
+  --bg0:#191919;--bg1:#202020;--bg2:#272727;--bg3:#2f2f2f;--bg4:#373737;--bg5:#424242;
+  --border:#383838;--border2:#444;
+  --text0:#e8e8e8;--text1:#cfcfcf;--text2:#9b9b9b;--text3:#606060;
+  --blue:#4a9eff;--bluebg:#1e3a5f;--green:#4caf82;--greenbg:#1a3a2a;
+  --amber:#e0a94a;--amberbg:#3a2d12;--red:#e05c5c;--redbg:#3a1a1a;
+  --purple:#9b72cf;--purplebg:#2d2040;--teal:#3fbcb0;--tealbg:#1a3035;
+  --sidebar-w:240px;
+}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg0);color:var(--text0);font-size:14px;line-height:1.5;display:flex;min-height:100vh;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;overflow-y:auto;z-index:100;}
+.sidebar-logo{padding:14px 14px 10px;font-size:13px;font-weight:600;color:var(--text0);display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);}
+.sidebar-logo .logo-icon{width:22px;height:22px;background:linear-gradient(135deg,#6b21a8,#a855f7);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;color:white;font-weight:700;flex-shrink:0;}
+.sidebar-section{padding:8px 6px 4px;}
+.sidebar-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:4px 8px;margin-bottom:2px;}
+.sidebar-item{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:4px;cursor:pointer;font-size:13.5px;color:var(--text2);transition:background .1s;user-select:none;}
+.sidebar-item:hover,.sidebar-item.active{background:var(--bg3);color:var(--text0);}
+.sidebar-item .si-icon{font-size:14px;min-width:18px;text-align:center;}
+.sidebar-item .si-badge{margin-left:auto;font-size:11px;background:var(--bg5);color:var(--text2);padding:1px 6px;border-radius:10px;}
+.sidebar-proj{display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12.5px;color:var(--text2);transition:background .1s;}
+.sidebar-proj:hover{background:var(--bg3);color:var(--text0);}
+.sidebar-proj .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+/* ── MAIN ── */
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:44px;border-bottom:1px solid var(--border);background:var(--bg0);position:sticky;top:0;z-index:50;}
+.topbar-left{font-size:13px;color:var(--text2);}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.topbar-right span{font-size:13px;color:var(--text2);}
+.share-btn{background:var(--bg3);border:1px solid var(--border2);color:var(--text0);font-size:12px;font-weight:500;padding:4px 12px;border-radius:4px;cursor:pointer;font-family:inherit;transition:background .1s;}
+.share-btn:hover{background:var(--bg4);}
+.content{flex:1;overflow-y:auto;}
+.page{max-width:1000px;margin:0 auto;padding:40px 60px 80px;display:none;}
+.page.active{display:block;}
+.page-title{font-size:30px;font-weight:700;color:var(--text0);margin-bottom:6px;letter-spacing:-.02em;}
+.page-sub{font-size:14px;color:var(--text3);margin-bottom:28px;padding-left:10px;border-left:3px solid var(--border2);}
+
+/* ── LOADING / CONFIG ── */
+.config-box{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:24px 28px;margin-bottom:24px;}
+.config-box h3{font-size:15px;font-weight:600;color:var(--text0);margin-bottom:14px;}
+.config-step{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+.config-step:last-child{border-bottom:none;}
+.step-num{width:24px;height:24px;min-width:24px;background:var(--purple);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white;flex-shrink:0;margin-top:1px;}
+.step-body{flex:1;}
+.step-title{font-size:13px;font-weight:600;color:var(--text0);margin-bottom:4px;}
+.step-desc{font-size:12px;color:var(--text2);line-height:1.6;}
+.url-input{width:100%;margin-top:8px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:7px 10px;font-size:12px;color:var(--text0);font-family:inherit;outline:none;}
+.url-input:focus{border-color:var(--purple);}
+.url-input::placeholder{color:var(--text3);}
+.connect-btn{background:var(--purple);border:none;color:white;font-size:13px;font-weight:600;padding:8px 20px;border-radius:4px;cursor:pointer;font-family:inherit;margin-top:12px;transition:opacity .15s;}
+.connect-btn:hover{opacity:.85;}
+.status-bar{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);padding:8px 12px;border-radius:4px;background:var(--bg3);margin-top:8px;}
+.status-dot-anim{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── DASHBOARD CARDS ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:28px;}
+.kpi-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px 18px;}
+.kpi-label{font-size:12px;color:var(--text2);margin-bottom:6px;}
+.kpi-value{font-size:28px;font-weight:700;color:var(--text0);}
+.kpi-card.green .kpi-value{color:var(--green);}
+.kpi-card.blue .kpi-value{color:var(--blue);}
+.kpi-card.amber .kpi-value{color:var(--amber);}
+.kpi-card.red .kpi-value{color:var(--red);}
+.kpi-card.purple .kpi-value{color:var(--purple);}
+.progress-container{margin-top:8px;}
+.prog-label{font-size:11px;color:var(--text2);margin-bottom:4px;}
+.prog-track{height:4px;background:var(--bg5);border-radius:2px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--green);border-radius:2px;transition:width .5s;}
+
+/* ── FILTER TABS ── */
+.filter-tabs{display:flex;align-items:center;gap:4px;margin-bottom:16px;flex-wrap:wrap;}
+.filter-tab{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:13px;cursor:pointer;color:var(--text2);background:none;border:none;font-family:inherit;transition:background .1s;}
+.filter-tab:hover{background:var(--bg3);color:var(--text0);}
+.filter-tab.active{background:var(--bg4);color:var(--text0);font-weight:500;border:1px solid var(--border2);}
+.filter-actions{margin-left:auto;display:flex;gap:6px;}
+.icon-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:4px;border-radius:4px;font-family:inherit;transition:color .1s,background .1s;}
+.icon-btn:hover{color:var(--text0);background:var(--bg3);}
+
+/* ── TASK TABLE ── */
+.task-table{width:100%;border-collapse:collapse;margin-bottom:4px;}
+.task-table th{text-align:left;padding:6px 10px;font-size:11px;font-weight:500;color:var(--text3);border-bottom:1px solid var(--border);white-space:nowrap;}
+.task-table td{padding:7px 10px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+.task-table tr:hover td{background:var(--bg2);}
+.task-table tr:last-child td{border-bottom:none;}
+.task-name{font-weight:600;color:var(--text0);}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap;}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+.b-andamento{background:var(--bluebg);color:var(--blue);}
+.b-proxima{background:var(--bg4);color:var(--text2);}
+.b-finalizada{background:var(--greenbg);color:var(--green);}
+.b-atrasada{background:var(--redbg);color:var(--red);}
+.b-cancelada{background:var(--bg5);color:var(--text3);}
+.p-alta{background:var(--redbg);color:var(--red);border-radius:3px;font-size:11px;font-weight:600;padding:1px 7px;}
+.p-media{background:var(--amberbg);color:var(--amber);border-radius:3px;font-size:11px;font-weight:600;padding:1px 7px;}
+.p-baixa{background:var(--bg4);color:var(--text3);border-radius:3px;font-size:11px;padding:1px 7px;}
+.ctx-w{background:#1e3a5f;color:#5a9fd4;border-radius:3px;padding:1px 7px;font-size:11px;font-weight:500;}
+.ctx-12{background:var(--purplebg);color:var(--purple);border-radius:3px;padding:1px 7px;font-size:11px;font-weight:500;}
+.group-hdr{display:flex;align-items:center;gap:6px;padding:10px 4px;cursor:pointer;user-select:none;}
+.group-arrow{font-size:10px;color:var(--text2);transition:transform .15s;}
+.group-hdr.open .group-arrow{transform:rotate(90deg);}
+.group-name{font-size:13.5px;font-weight:600;color:var(--text0);}
+.group-count{font-size:12px;color:var(--text3);}
+.group-body.collapsed{display:none;}
+
+/* ── VISÃO GERAL ── */
+.vo-title{font-size:22px;font-weight:700;color:var(--text0);margin-bottom:12px;}
+.vo-controls{display:flex;gap:8px;margin-bottom:18px;}
+.ctrl{font-family:inherit;font-size:12px;font-weight:500;padding:4px 12px;border:1px solid var(--border2);border-radius:3px;background:var(--bg2);color:var(--text2);cursor:pointer;transition:background .1s;}
+.ctrl:hover{background:var(--bg3);color:var(--text0);}
+.fase-sep{display:flex;align-items:center;gap:10px;margin:28px 0 12px;}
+.fase-tag{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:3px 10px;border-radius:3px;white-space:nowrap;flex-shrink:0;}
+.fase-line{flex:1;height:1px;}
+.f1 .fase-tag,.f1 .fase-line{background:var(--purplebg);color:var(--purple);}
+.f2 .fase-tag,.f2 .fase-line{background:var(--bluebg);color:var(--blue);}
+.f3 .fase-tag{background:#2a1a40;color:#c084fc;}
+.f3 .fase-line{background:#2a1a40;}
+.week-block{margin-bottom:2px;}
+.week-toggle{display:flex;align-items:flex-start;gap:6px;padding:5px 4px;cursor:pointer;border-radius:4px;user-select:none;transition:background .1s;}
+.week-toggle:hover{background:var(--bg2);}
+.wt-arr{font-size:10px;color:var(--text3);margin-top:4px;transition:transform .15s;flex-shrink:0;}
+.week-block.open .wt-arr{transform:rotate(90deg);}
+.wt-body{display:none;padding:6px 0 10px 20px;}
+.week-block.open .wt-body{display:block;}
+.callout-obj{display:flex;gap:10px;padding:10px 14px;border-radius:5px;margin-bottom:10px;margin-top:6px;background:var(--purplebg);border:1px solid #4a3070;}
+.callout-res{display:flex;gap:10px;padding:8px 14px;border-radius:5px;margin-bottom:12px;background:var(--bg2);border:1px solid var(--border);}
+.callout-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px;}
+.callout-txt{font-size:13.5px;font-weight:500;color:var(--text0);line-height:1.5;}
+.ngroup{margin-bottom:2px;}
+.ngtoggle{display:flex;align-items:center;gap:5px;padding:3px 4px;cursor:pointer;border-radius:4px;user-select:none;transition:background .1s;}
+.ngtoggle:hover{background:var(--bg2);}
+.ng-arr{font-size:9px;color:var(--text3);transition:transform .15s;flex-shrink:0;}
+.ngroup.open .ng-arr{transform:rotate(90deg);}
+.ng-label{font-size:13.5px;font-weight:500;color:var(--text1);}
+.ngbody{display:none;padding-left:18px;}
+.ngroup.open .ngbody{display:block;}
+.ntask{display:flex;align-items:flex-start;gap:8px;padding:4px 4px;border-radius:4px;transition:background .1s;font-size:13px;}
+.ntask:hover{background:var(--bg2);}
+.nchk{width:14px;height:14px;min-width:14px;border:1.5px solid var(--border2);border-radius:3px;margin-top:3px;cursor:pointer;background:transparent;transition:all .15s;display:flex;align-items:center;justify-content:center;}
+.nchk:hover{border-color:var(--purple);}
+.nchk.done{background:var(--green);border-color:var(--green);}
+.nchk.done::after{content:'✓';font-size:9px;color:white;font-weight:700;}
+.nb{font-size:11px;font-weight:600;padding:2px 7px;border-radius:3px;flex-shrink:0;margin-top:2px;}
+.nb-am{background:var(--amberbg);color:var(--amber);}
+.nb-tl{background:var(--tealbg);color:var(--teal);}
+.nb-bl{background:var(--bluebg);color:var(--blue);}
+
+/* ── SYNC STATUS ── */
+.sync-bar{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text3);padding:4px 0;margin-bottom:12px;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green);}
+.sync-dot.syncing{background:var(--amber);animation:pulse 1s infinite;}
+
+/* ── LOADING SPINNER ── */
+.loading{display:flex;align-items:center;gap:10px;color:var(--text2);font-size:13px;padding:40px 0;}
+.spinner{width:20px;height:20px;border:2px solid var(--border2);border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media(max-width:800px){.sidebar{display:none}.main{margin-left:0}.page{padding:24px 20px 60px}}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo"><div class="logo-icon">M</div>m_versity</div>
+  <div class="sidebar-section">
+    <div class="sidebar-item active" onclick="showPage('config')"><span class="si-icon">⚙️</span> Configuração</div>
+    <div class="sidebar-item" onclick="showPage('dashboard')"><span class="si-icon">📊</span> Dashboard</div>
+    <div class="sidebar-item" onclick="showPage('lista')"><span class="si-icon">📋</span> Lista de tarefas</div>
+    <div class="sidebar-item" onclick="showPage('visao')"><span class="si-icon">👁</span> Visão Geral</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Projetos</div>
+    <div class="sidebar-proj"><div class="dot" style="background:#4caf82"></div>Plano 12 Semanas CS</div>
+    <div class="sidebar-proj"><div class="dot" style="background:#4a9eff"></div>IA & Clint</div>
+    <div class="sidebar-proj"><div class="dot" style="background:#9b72cf"></div>Aulas & Plataforma</div>
+    <div class="sidebar-proj"><div class="dot" style="background:#e0a94a"></div>Renovações Q2</div>
+    <div class="sidebar-proj"><div class="dot" style="background:#e05c5c"></div>Eventos 2026</div>
+  </div>
+  <div id="sidebar-sync" style="margin-top:auto;padding:12px 14px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);display:none;">
+    <div style="display:flex;align-items:center;gap:6px;"><div class="sync-dot" id="sdot"></div><span id="stext">Conectado ao Sheets</span></div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <span class="topbar-left" id="topbar-title">Gerenciador de Tarefas</span>
+    <div class="topbar-right">
+      <span id="last-sync">—</span>
+      <button class="share-btn" onclick="syncData()">↻ Sincronizar</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ── CONFIGURAÇÃO ── -->
+    <div class="page active" id="page-config">
+      <h1 class="page-title">⚙️ Configuração</h1>
+      <p class="page-sub">Conecte esta página ao seu Google Sheets em 3 passos</p>
+
+      <div class="config-box">
+        <h3>📋 Como funciona</h3>
+        <div style="font-size:13px;color:var(--text2);line-height:1.8;">
+          Você alimenta os dados na planilha Google Sheets → esta página lê automaticamente a cada 60 segundos → tudo atualiza sem você precisar mexer aqui.
+        </div>
+      </div>
+
+      <div class="config-box">
+        <h3>Passo a passo para conectar</h3>
+
+        <div class="config-step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">Importe a planilha para o Google Sheets</div>
+            <div class="step-desc">Baixe o arquivo <strong>mversity_sheets_modelo.xlsx</strong> → abra o Google Drive → arraste o arquivo → clique com o botão direito → "Abrir com" → "Planilhas Google"</div>
+          </div>
+        </div>
+
+        <div class="config-step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">Publique a aba "Tarefas" na web como CSV</div>
+            <div class="step-desc">No Google Sheets: <strong>Arquivo → Compartilhar → Publicar na web</strong><br>
+            Selecione a aba <strong>"Tarefas"</strong> e o formato <strong>"Valores separados por vírgula (.csv)"</strong><br>
+            Clique em <strong>"Publicar"</strong> e copie o link gerado</div>
+            <input class="url-input" id="url-tarefas" placeholder="Cole aqui o link CSV da aba Tarefas..." />
+          </div>
+        </div>
+
+        <div class="config-step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">Publique a aba "Semanas" na web como CSV</div>
+            <div class="step-desc">Repita o processo acima mas selecione a aba <strong>"Semanas"</strong></div>
+            <input class="url-input" id="url-semanas" placeholder="Cole aqui o link CSV da aba Semanas..." />
+          </div>
+        </div>
+
+        <button class="connect-btn" onclick="conectar()">🔗 Conectar ao Google Sheets</button>
+        <div id="connect-status" style="display:none" class="status-bar">
+          <div class="status-dot-anim"></div>
+          <span id="connect-msg">Conectando...</span>
+        </div>
+      </div>
+
+      <div class="config-box" style="border-color:var(--amber)">
+        <h3 style="color:var(--amber)">⚠️ Dica importante</h3>
+        <div style="font-size:13px;color:var(--text2);line-height:1.8;">
+          O link do Google Sheets precisa ser <strong style="color:var(--text0)">público</strong> para esta página conseguir ler.<br>
+          Não se preocupe: o link só permite <strong style="color:var(--text0)">leitura</strong> — ninguém consegue editar sua planilha por ele.<br>
+          Para revogar o acesso a qualquer momento: Arquivo → Compartilhar → Publicar na web → Parar publicação.
+        </div>
+      </div>
+
+      <div id="demo-section">
+        <div style="height:1px;background:var(--border);margin:24px 0;"></div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">Enquanto isso, você pode visualizar a página com dados de demonstração:</div>
+        <button class="connect-btn" style="background:var(--bg4);color:var(--text0);border:1px solid var(--border2);" onclick="carregarDemo()">👁 Ver com dados de demonstração</button>
+      </div>
+    </div>
+
+    <!-- ── DASHBOARD ── -->
+    <div class="page" id="page-dashboard">
+      <h1 class="page-title">Dashboard</h1>
+      <p class="page-sub">m_versity · Plano 12 Semanas CS</p>
+      <div class="sync-bar"><div class="sync-dot" id="ddot"></div><span id="dsync">Carregando dados...</span></div>
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="loading"><div class="spinner"></div>Carregando métricas...</div>
+      </div>
+      <div id="dash-por-semana"></div>
+    </div>
+
+    <!-- ── LISTA DE TAREFAS ── -->
+    <div class="page" id="page-lista">
+      <h1 class="page-title">Lista de tarefas</h1>
+      <div class="sync-bar"><div class="sync-dot" id="ldot"></div><span id="lsync">Carregando dados...</span></div>
+      <div class="filter-tabs" id="filter-tabs">
+        <button class="filter-tab active" onclick="filtrarLista('todas',this)">≡ Todas</button>
+        <button class="filter-tab" onclick="filtrarLista('Em andamento',this)">🔄 Em andamento</button>
+        <button class="filter-tab" onclick="filtrarLista('Próxima',this)">🔜 Próximas</button>
+        <button class="filter-tab" onclick="filtrarLista('Alta',this)">⚡ Prioridade Alta</button>
+        <button class="filter-tab" onclick="filtrarLista('Finalizada',this)">✅ Finalizadas</button>
+        <button class="filter-tab" onclick="filtrarLista('Atrasada',this)">⚠️ Atrasadas</button>
+        <div class="filter-actions"><button class="icon-btn" onclick="syncData()">↻</button></div>
+      </div>
+      <div id="lista-container">
+        <div class="loading"><div class="spinner"></div>Carregando tarefas...</div>
+      </div>
+    </div>
+
+    <!-- ── VISÃO GERAL ── -->
+    <div class="page" id="page-visao">
+      <h2 class="vo-title">Visão Geral do Projeto</h2>
+      <div style="height:1px;background:var(--border);margin-bottom:16px;"></div>
+      <div class="sync-bar"><div class="sync-dot" id="vdot"></div><span id="vsync">Carregando dados...</span></div>
+      <div class="vo-controls">
+        <button class="ctrl" onclick="expandAll()">▼ Expandir tudo</button>
+        <button class="ctrl" onclick="collapseAll()">▲ Recolher tudo</button>
+      </div>
+      <div id="visao-container">
+        <div class="loading"><div class="spinner"></div>Carregando semanas...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Estado global ──────────────────────────────────────────────────────
+let TAREFAS = [];
+let SEMANAS = [];
+let URL_TAREFAS = localStorage.getItem('mv_url_tarefas') || '';
+let URL_SEMANAS = localStorage.getItem('mv_url_semanas') || '';
+let syncInterval = null;
+let filtroAtual = 'todas';
+
+// Restaurar URLs salvas
+if (URL_TAREFAS) document.getElementById('url-tarefas').value = URL_TAREFAS;
+if (URL_SEMANAS) document.getElementById('url-semanas').value = URL_SEMANAS;
+
+// Auto-conectar se já tem URLs
+if (URL_TAREFAS && URL_SEMANAS) {
+  setTimeout(() => conectar(), 500);
+}
+
+// ── Navegação ──────────────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  const map = {config:0, dashboard:1, lista:2, visao:3};
+  const items = document.querySelectorAll('.sidebar-item');
+  if (map[id] !== undefined) items[map[id]].classList.add('active');
+  const titles = {config:'Configuração', dashboard:'Dashboard', lista:'Lista de tarefas', visao:'Visão Geral'};
+  document.getElementById('topbar-title').textContent = titles[id] || '';
+}
+
+// ── Parse CSV ──────────────────────────────────────────────────────────
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.replace(/"/g,'').trim());
+  return lines.slice(1).map(line => {
+    // Suporte a campos com vírgulas entre aspas
+    const vals = [];
+    let cur = '', inQ = false;
+    for (const ch of line) {
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
+      else { cur += ch; }
+    }
+    vals.push(cur.trim());
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = (vals[i] || '').replace(/^"|"$/g,''); });
+    return obj;
+  }).filter(r => r['Tarefa'] && r['Tarefa'].length > 0);
+}
+
+// ── Conectar ao Google Sheets ──────────────────────────────────────────
+async function conectar() {
+  const urlT = document.getElementById('url-tarefas').value.trim();
+  const urlS = document.getElementById('url-semanas').value.trim();
+
+  if (!urlT || !urlS) {
+    alert('Por favor, cole os dois links CSV antes de conectar.');
+    return;
+  }
+
+  document.getElementById('connect-status').style.display = 'flex';
+  document.getElementById('connect-msg').textContent = 'Conectando ao Google Sheets...';
+
+  try {
+    await carregarDados(urlT, urlS);
+    URL_TAREFAS = urlT;
+    URL_SEMANAS = urlS;
+    localStorage.setItem('mv_url_tarefas', urlT);
+    localStorage.setItem('mv_url_semanas', urlS);
+    document.getElementById('connect-msg').textContent = `✅ Conectado! ${TAREFAS.length} tarefas carregadas.`;
+    document.getElementById('sidebar-sync').style.display = 'block';
+    iniciarAutoSync();
+    setTimeout(() => { showPage('dashboard'); }, 1200);
+  } catch(e) {
+    document.getElementById('connect-msg').textContent = '❌ Erro: verifique se o link está correto e publicado como público.';
+    console.error(e);
+  }
+}
+
+async function carregarDados(urlT, urlS) {
+  // Adicionar cache-buster
+  const t = Date.now();
+  const [respT, respS] = await Promise.all([
+    fetch(urlT + '&t=' + t),
+    fetch(urlS + '&t=' + t)
+  ]);
+  if (!respT.ok || !respS.ok) throw new Error('Erro ao buscar dados');
+  const [csvT, csvS] = await Promise.all([respT.text(), respS.text()]);
+  TAREFAS = parseCSV(csvT);
+  SEMANAS = parseCSV(csvS);
+  renderTudo();
+  atualizarSync();
+}
+
+async function syncData() {
+  if (!URL_TAREFAS || !URL_SEMANAS) return;
+  setSyncStatus('syncing');
+  try {
+    await carregarDados(URL_TAREFAS, URL_SEMANAS);
+    setSyncStatus('ok');
+  } catch(e) {
+    setSyncStatus('error');
+  }
+}
+
+function iniciarAutoSync() {
+  if (syncInterval) clearInterval(syncInterval);
+  syncInterval = setInterval(syncData, 60000); // a cada 60s
+}
+
+function atualizarSync() {
+  const agora = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+  document.getElementById('last-sync').textContent = `Última sync: ${agora}`;
+  setSyncStatus('ok');
+}
+
+function setSyncStatus(s) {
+  const dots = ['sdot','ddot','ldot','vdot'];
+  dots.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = 'sync-dot' + (s==='syncing' ? ' syncing' : '');
+    el.style.background = s==='ok' ? 'var(--green)' : s==='syncing' ? 'var(--amber)' : 'var(--red)';
+  });
+  ['dsync','lsync','vsync'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = s==='ok' ? `${TAREFAS.length} tarefas · sincronizado` : s==='syncing' ? 'Sincronizando...' : 'Erro de sincronização';
+  });
+}
+
+// ── Demo data ──────────────────────────────────────────────────────────
+function carregarDemo() {
+  TAREFAS = [
+    {ID:"T001",Tarefa:"Definir SLA dos líderes",Semana:"Semana 1",Fase:"Fase 1 · Proteger",Status:"Em andamento",Prioridade:"Alta",Categoria:"⚙️ Processo",Prazo:"09/06/2026",Projeto:"Plano 12 Semanas CS"},
+    {ID:"T002",Tarefa:"Reunião com equipe High Member",Semana:"Semana 1",Fase:"Fase 1 · Proteger",Status:"Próxima",Prioridade:"Alta",Categoria:"🤖 IA & Clint",Prazo:"09/06/2026",Projeto:"Plano 12 Semanas CS"},
+    {ID:"T003",Tarefa:"Atualização do painel da Impacto",Semana:"Semana 1",Fase:"Fase 1 · Proteger",Status:"Em andamento",Prioridade:"Média",Categoria:"🖥️ Painel/Produto",Prazo:"10/06/2026",Projeto:"Plano 12 Semanas CS"},
+    {ID:"T004",Tarefa:"Estruturar pipeline de CS no Clint",Semana:"Semana 1",Fase:"Fase 1 · Proteger",Status:"Próxima",Prioridade:"Alta",Categoria:"🤖 IA & Clint",Prazo:"15/06/2026",Projeto:"IA & Clint"},
+    {ID:"T005",Tarefa:"Criar formulário de satisfação (NPS)",Semana:"Semana 1",Fase:"Fase 1 · Proteger",Status:"Finalizada",Prioridade:"Alta",Categoria:"💰 Renovações/CS",Prazo:"09/06/2026",Projeto:"Plano 12 Semanas CS"},
+    {ID:"T006",Tarefa:"Migração das aulas da Cademi",Semana:"Semana 2",Fase:"Fase 1 · Proteger",Status:"Próxima",Prioridade:"Alta",Categoria:"📚 Aulas",Prazo:"21/06/2026",Projeto:"Aulas & Plataforma"},
+    {ID:"T007",Tarefa:"Régua D-60: abordagem personalizada",Semana:"Semana 5",Fase:"Fase 2 · Construir Valor",Status:"Próxima",Prioridade:"Alta",Categoria:"💰 Renovações/CS",Prazo:"08/06/2026",Projeto:"Renovações Q2"},
+    {ID:"T008",Tarefa:"eLab Turma 12 — nova divisão de responsabilidades",Semana:"Semana 7",Fase:"Fase 2 · Construir Valor",Status:"Próxima",Prioridade:"Alta",Categoria:"🎪 Evento",Prazo:"21/06/2026",Projeto:"Eventos 2026"},
+    {ID:"T009",Tarefa:"Call mensal: ROI individual",Semana:"Semana 9",Fase:"Fase 3 · Renovar",Status:"Próxima",Prioridade:"Alta",Categoria:"💰 Renovações/CS",Prazo:"06/07/2026",Projeto:"Plano 12 Semanas CS"},
+    {ID:"T010",Tarefa:"Report final: churn, renovação, NPS",Semana:"Semana 12",Fase:"Fase 3 · Renovar",Status:"Próxima",Prioridade:"Alta",Categoria:"💰 Renovações/CS",Prazo:"27/07/2026",Projeto:"Plano 12 Semanas CS"},
+  ];
+  SEMANAS = [
+    {Semana:"Semana 1",Período:"05–11/mai",Fase:"Fase 1 · Proteger","🎯 Objetivo Central":"Diagnóstico total: mapear alunos em risco e ativar o processo","✅ Resultado Esperado":"Sair sabendo quem precisa de atenção urgente e com SLA definido",Status:"Em execução"},
+    {Semana:"Semana 2",Período:"12–18/mai",Fase:"Fase 1 · Proteger","🎯 Objetivo Central":"Operacionalizar: iniciar calls mensais e clarear processo das aulas","✅ Resultado Esperado":"CS com primeira call realizada e pipeline de IA desenhada",Status:"Em execução"},
+    {Semana:"Semana 5",Período:"02–08/jun",Fase:"Fase 2 · Construir Valor","🎯 Objetivo Central":"Ativar régua D-60: abordagem personalizada para quem vence em junho","✅ Resultado Esperado":"Todos os alunos com vencimento em junho já abordados",Status:"Atual"},
+    {Semana:"Semana 9",Período:"30/jun–06/jul",Fase:"Fase 3 · Renovar","🎯 Objetivo Central":"Call mensal: apresentar ROI individual de cada aluno","✅ Resultado Esperado":"Cada aluno recebe documento de resultados antes da renovação",Status:"Próxima"},
+    {Semana:"Semana 12",Período:"21–27/jul",Fase:"Fase 3 · Renovar","🎯 Objetivo Central":"Report final: churn, renovação, NPS — comparativo antes vs. depois","✅ Resultado Esperado":"Diretoria recebe dashboard completo do trimestre",Status:"Próxima"},
+  ];
+  renderTudo();
+  setSyncStatus('ok');
+  document.getElementById('last-sync').textContent = 'Modo demonstração';
+  document.getElementById('sidebar-sync').style.display = 'block';
+  showPage('dashboard');
+}
+
+// ── RENDER TUDO ────────────────────────────────────────────────────────
+function renderTudo() {
+  renderDashboard();
+  renderLista(filtroAtual);
+  renderVisao();
+}
+
+// ── DASHBOARD ──────────────────────────────────────────────────────────
+function renderDashboard() {
+  const total = TAREFAS.length;
+  const finalizada = TAREFAS.filter(t => t.Status === 'Finalizada').length;
+  const andamento  = TAREFAS.filter(t => t.Status === 'Em andamento').length;
+  const proxima    = TAREFAS.filter(t => t.Status === 'Próxima').length;
+  const atrasada   = TAREFAS.filter(t => t.Status === 'Atrasada').length;
+  const alta       = TAREFAS.filter(t => t.Prioridade === 'Alta').length;
+  const pct = total > 0 ? Math.round(finalizada/total*100) : 0;
+
+  document.getElementById('kpi-grid').innerHTML = `
+    <div class="kpi-card"><div class="kpi-label">Total de tarefas</div><div class="kpi-value">${total}</div></div>
+    <div class="kpi-card green"><div class="kpi-label">✅ Finalizadas</div><div class="kpi-value">${finalizada}</div></div>
+    <div class="kpi-card blue"><div class="kpi-label">🔄 Em andamento</div><div class="kpi-value">${andamento}</div></div>
+    <div class="kpi-card amber"><div class="kpi-label">🔜 Próximas</div><div class="kpi-value">${proxima}</div></div>
+    ${atrasada > 0 ? `<div class="kpi-card red"><div class="kpi-label">⚠️ Atrasadas</div><div class="kpi-value">${atrasada}</div></div>` : ''}
+    <div class="kpi-card purple"><div class="kpi-label">⚡ Prioridade Alta</div><div class="kpi-value">${alta}</div></div>
+    <div class="kpi-card"><div class="kpi-label">📈 Progresso geral</div><div class="kpi-value">${pct}%</div>
+      <div class="progress-container"><div class="prog-track"><div class="prog-fill" style="width:${pct}%"></div></div></div>
+    </div>
+  `;
+
+  // Por semana
+  const semanas = [...new Set(TAREFAS.map(t => t.Semana))].sort((a,b) => {
+    const na = parseInt(a.replace(/\D/g,'')), nb = parseInt(b.replace(/\D/g,''));
+    return na - nb;
+  });
+
+  let html = `<div style="font-size:14px;font-weight:600;color:var(--text0);margin-bottom:12px;">Progresso por semana</div>
+  <table class="task-table"><thead><tr><th>Semana</th><th>Total</th><th>Finalizadas</th><th>Em andamento</th><th>Próximas</th><th>Progresso</th></tr></thead><tbody>`;
+
+  semanas.forEach(sem => {
+    const ts = TAREFAS.filter(t => t.Semana === sem);
+    const fin = ts.filter(t => t.Status==='Finalizada').length;
+    const and = ts.filter(t => t.Status==='Em andamento').length;
+    const pro = ts.filter(t => t.Status==='Próxima').length;
+    const p = ts.length > 0 ? Math.round(fin/ts.length*100) : 0;
+    html += `<tr>
+      <td style="font-weight:600;color:var(--purple)">${sem}</td>
+      <td style="text-align:center">${ts.length}</td>
+      <td style="text-align:center;color:var(--green);font-weight:600">${fin}</td>
+      <td style="text-align:center;color:var(--blue);font-weight:600">${and}</td>
+      <td style="text-align:center;color:var(--text2)">${pro}</td>
+      <td><div class="prog-track" style="width:120px"><div class="prog-fill" style="width:${p}%"></div></div></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('dash-por-semana').innerHTML = html;
+}
+
+// ── LISTA DE TAREFAS ───────────────────────────────────────────────────
+function filtrarLista(filtro, btn) {
+  filtroAtual = filtro;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderLista(filtro);
+}
+
+function renderLista(filtro) {
+  let tarefas = [...TAREFAS];
+  if (filtro !== 'todas') {
+    tarefas = tarefas.filter(t => t.Status === filtro || t.Prioridade === filtro);
+  }
+
+  // Agrupar por projeto
+  const grupos = {};
+  tarefas.forEach(t => {
+    const g = t.Projeto || 'Sem Projeto';
+    if (!grupos[g]) grupos[g] = [];
+    grupos[g].push(t);
+  });
+
+  if (tarefas.length === 0) {
+    document.getElementById('lista-container').innerHTML = `<div style="padding:40px 0;color:var(--text3);font-size:13px;">Nenhuma tarefa encontrada para este filtro.</div>`;
+    return;
+  }
+
+  let html = '';
+  Object.entries(grupos).forEach(([grupo, ts]) => {
+    const gid = 'g_' + grupo.replace(/\s/g,'_');
+    html += `
+    <div style="margin-bottom:16px;">
+      <div class="group-hdr open" onclick="toggleGrp(this)">
+        <span class="group-arrow">▶</span>
+        <span class="group-name">${grupo}</span>
+        <span class="group-count">${ts.length} tarefa${ts.length!==1?'s':''}</span>
+      </div>
+      <div class="group-body" id="${gid}">
+        <table class="task-table"><thead><tr>
+          <th style="width:120px">Status</th>
+          <th>Tarefa</th>
+          <th style="width:110px">Data exec.</th>
+          <th style="width:90px">Prioridade</th>
+          <th style="width:110px">Categoria</th>
+        </tr></thead><tbody>`;
+
+    ts.forEach(t => {
+      html += `<tr>
+        <td>${badgeStatus(t.Status)}</td>
+        <td><span class="task-name">${t.Tarefa}</span></td>
+        <td style="font-size:12px;color:var(--text2)">${t.Prazo||'—'}</td>
+        <td>${badgePri(t.Prioridade)}</td>
+        <td style="font-size:12px;color:var(--text2)">${t.Categoria||'—'}</td>
+      </tr>`;
+    });
+    html += '</tbody></table></div></div>';
+  });
+  document.getElementById('lista-container').innerHTML = html;
+}
+
+function badgeStatus(s) {
+  const map = {
+    'Em andamento':'b-andamento','Finalizada':'b-finalizada',
+    'Próxima':'b-proxima','Atrasada':'b-atrasada','Cancelada':'b-cancelada'
+  };
+  const cls = map[s] || 'b-proxima';
+  return `<span class="badge ${cls}"><span class="badge-dot"></span>${s||'—'}</span>`;
+}
+
+function badgePri(p) {
+  if (!p) return '—';
+  const map = {'Alta':'p-alta','Média':'p-media','Baixa':'p-baixa'};
+  return `<span class="${map[p]||'p-baixa'}">${p}</span>`;
+}
+
+function toggleGrp(el) {
+  const body = el.nextElementSibling;
+  el.classList.toggle('open');
+  body.classList.toggle('collapsed');
+}
+
+// ── VISÃO GERAL ────────────────────────────────────────────────────────
+function renderVisao() {
+  if (SEMANAS.length === 0) {
+    document.getElementById('visao-container').innerHTML = '<div style="color:var(--text3);font-size:13px;padding:20px 0;">Nenhum dado de semana disponível.</div>';
+    return;
+  }
+
+  const FASE_CONFIG = {
+    'Fase 1 · Proteger':     {cls:'f1', label:'FASE 1 · Proteger · Maio'},
+    'Fase 2 · Construir Valor': {cls:'f2', label:'FASE 2 · Construir Valor · Junho'},
+    'Fase 3 · Renovar':      {cls:'f3', label:'FASE 3 · Renovar & Crescer · Julho'},
+  };
+
+  let html = '';
+  let ultimaFase = '';
+
+  SEMANAS.forEach((sem, i) => {
+    const fase = sem.Fase || '';
+    if (fase !== ultimaFase) {
+      const fc = FASE_CONFIG[fase] || {cls:'f1', label:fase};
+      html += `<div class="fase-sep ${fc.cls}"><span class="fase-tag">${fc.label}</span><div class="fase-line"></div></div>`;
+      ultimaFase = fase;
+    }
+
+    const semId = 'vs_' + i;
+    const obj = sem['🎯 Objetivo Central'] || sem['Objetivo Central'] || '—';
+    const res = sem['✅ Resultado Esperado'] || sem['Resultado Esperado'] || '—';
+    const tarefasDaSemana = TAREFAS.filter(t => t.Semana === sem.Semana);
+    const totalT = tarefasDaSemana.length;
+    const finT = tarefasDaSemana.filter(t => t.Status === 'Finalizada').length;
+
+    const categorias = {};
+    tarefasDaSemana.forEach(t => {
+      const c = t.Categoria || 'Outros';
+      if (!categorias[c]) categorias[c] = [];
+      categorias[c].push(t);
+    });
+
+    html += `
+    <div class="week-block" id="${semId}">
+      <div class="week-toggle" onclick="document.getElementById('${semId}').classList.toggle('open')">
+        <span class="wt-arr">▶</span>
+        <div style="flex:1">
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+            <span style="font-size:15px;font-weight:500;color:var(--text0)">${sem.Semana}</span>
+            <span style="font-size:12px;color:var(--text3);font-family:monospace">${sem.Período||''}</span>
+            <span style="font-size:11px;background:var(--bg4);color:var(--text2);padding:1px 7px;border-radius:3px;">${finT}/${totalT} tarefas</span>
+          </div>
+          <div style="font-size:13px;color:var(--text2);margin-top:1px">${obj}</div>
+        </div>
+      </div>
+      <div class="wt-body">
+        <div class="callout-obj">
+          <span style="font-size:15px;flex-shrink:0;margin-top:1px">🎯</span>
+          <div>
+            <div class="callout-lbl" style="color:var(--purple)">Objetivo central</div>
+            <div class="callout-txt">${obj}</div>
+          </div>
+        </div>
+        <div class="callout-res">
+          <span style="font-size:15px;flex-shrink:0;margin-top:1px">✅</span>
+          <div>
+            <div class="callout-lbl" style="color:var(--text3)">Resultado esperado</div>
+            <div style="font-size:13px;font-style:italic;color:var(--text2)">${res}</div>
+          </div>
+        </div>`;
+
+    // Tarefas agrupadas por categoria
+    if (totalT > 0) {
+      Object.entries(categorias).forEach(([cat, ts], ci) => {
+        const cgid = `cg_${i}_${ci}`;
+        html += `
+        <div class="ngroup open">
+          <div class="ngtoggle" onclick="this.closest('.ngroup').classList.toggle('open')">
+            <span class="ng-arr">▶</span>
+            <span class="ng-label">${cat}</span>
+            <span style="font-size:11px;color:var(--text3);margin-left:6px">${ts.length}</span>
+          </div>
+          <div class="ngbody">`;
+        ts.forEach((t,ti) => {
+          const nbCls = t.Prioridade==='Alta' ? 'nb-am' : t.Status==='Em andamento' ? 'nb-tl' : 'nb-bl';
+          const nbLbl = t.Prioridade==='Alta' ? 'Prioridade' : t.Status==='Em andamento' ? 'Andamento' : 'Projeto';
+          html += `
+            <div class="ntask">
+              <div class="nchk" onclick="this.classList.toggle('done');this.nextElementSibling.classList.toggle('done')"></div>
+              <span style="font-size:13px;min-width:20px;text-align:center;margin-top:2px">${t.Status==='Finalizada'?'✅':t.Prioridade==='Alta'?'⚡':'📋'}</span>
+              <span style="flex:1;color:var(--text1);line-height:1.5;font-size:13px">${t.Tarefa}</span>
+              <span class="nb ${nbCls}">${nbLbl}</span>
+            </div>`;
+        });
+        html += `</div></div>`;
+      });
+    } else {
+      html += `<div style="font-size:13px;color:var(--text3);padding:8px 0;">Nenhuma tarefa vinculada a esta semana.</div>`;
+    }
+
+    html += `</div></div>`;
+  });
+
+  document.getElementById('visao-container').innerHTML = html;
+}
+
+function expandAll() {
+  document.querySelectorAll('.week-block').forEach(b => b.classList.add('open'));
+  document.querySelectorAll('.ngroup').forEach(g => g.classList.add('open'));
+}
+function collapseAll() {
+  document.querySelectorAll('.week-block').forEach(b => b.classList.remove('open'));
+}
+</script>
+</body>
+</html>
