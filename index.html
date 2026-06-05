@@ -350,11 +350,13 @@ function showPage(id) {
 
 // ── Parse CSV ──────────────────────────────────────────────────────────
 function parseCSV(text) {
+  // Remover BOM e caracteres invisíveis
+  text = text.replace(/^\uFEFF/, '').replace(/\r/g, '');
   const lines = text.trim().split('\n');
   if (lines.length < 2) return [];
-  const headers = lines[0].split(',').map(h => h.replace(/"/g,'').trim());
-  return lines.slice(1).map(line => {
-    // Suporte a campos com vírgulas entre aspas
+
+  // Parsear linha respeitando aspas
+  function parseLine(line) {
     const vals = [];
     let cur = '', inQ = false;
     for (const ch of line) {
@@ -363,13 +365,79 @@ function parseCSV(text) {
       else { cur += ch; }
     }
     vals.push(cur.trim());
+    return vals.map(v => v.replace(/^"|"$/g, '').trim());
+  }
+
+  const rawHeaders = parseLine(lines[0]);
+
+  // Normalizar cabeçalhos: remover emojis e espaços extras para mapeamento interno
+  function normalizeKey(h) {
+    return h.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').replace(/[^\w\u00C0-\u024F\s\/·]/g, '').trim();
+  }
+
+  const headers = rawHeaders;
+  const headersNorm = rawHeaders.map(normalizeKey);
+
+  // Mapa de alias para garantir compatibilidade independente de emoji
+  const ALIAS = {
+    'Objetivo Central': '🎯 Objetivo Central',
+    'Resultado Esperado': '✅ Resultado Esperado',
+    ' Objetivo Central': '🎯 Objetivo Central',
+    ' Resultado Esperado': '✅ Resultado Esperado',
+  };
+
+  return lines.slice(1).map(line => {
+    if (!line.trim()) return null;
+    const vals = parseLine(line);
     const obj = {};
-    headers.forEach((h, i) => { obj[h] = (vals[i] || '').replace(/^"|"$/g,''); });
+    headers.forEach((h, i) => {
+      const val = vals[i] || '';
+      obj[h] = val;
+      // Guardar também pela versão normalizada
+      const norm = normalizeKey(h);
+      if (norm !== h) obj[norm] = val;
+      // Guardar aliases
+      if (ALIAS[norm]) obj[ALIAS[norm]] = val;
+    });
     return obj;
-  }).filter(r => r['Tarefa'] && r['Tarefa'].length > 0);
+  }).filter(r => r !== null && (r['Tarefa'] || '').length > 0);
 }
 
-// ── Conectar ao Google Sheets ──────────────────────────────────────────
+// ── Parse CSV Semanas (sem filtro por coluna Tarefa) ───────────────────
+function parseCSVSemanas(text) {
+  text = text.replace(/^\uFEFF/, '').replace(/\r/g, '');
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+
+  function parseLine(line) {
+    const vals = [];
+    let cur = '', inQ = false;
+    for (const ch of line) {
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
+      else { cur += ch; }
+    }
+    vals.push(cur.trim());
+    return vals.map(v => v.replace(/^"|"$/g, '').trim());
+  }
+
+  const headers = parseLine(lines[0]);
+
+  return lines.slice(1).map(line => {
+    if (!line.trim()) return null;
+    const vals = parseLine(line);
+    const obj = {};
+    headers.forEach((h, i) => {
+      obj[h] = vals[i] || '';
+      // Guardar também sem emoji para compatibilidade
+      const norm = h.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').replace(/[^\w\u00C0-\u024F\s\/·]/g, '').trim();
+      if (norm !== h) obj[norm] = vals[i] || '';
+    });
+    return obj;
+  }).filter(r => r !== null && Object.values(r).some(v => v.length > 0));
+}
+
+
 async function conectar() {
   const urlT = document.getElementById('url-tarefas').value.trim();
   const urlS = document.getElementById('url-semanas').value.trim();
@@ -408,7 +476,7 @@ async function carregarDados(urlT, urlS) {
   if (!respT.ok || !respS.ok) throw new Error('Erro ao buscar dados');
   const [csvT, csvS] = await Promise.all([respT.text(), respS.text()]);
   TAREFAS = parseCSV(csvT);
-  SEMANAS = parseCSV(csvS);
+  SEMANAS = parseCSVSemanas(csvS);
   renderTudo();
   atualizarSync();
 }
@@ -640,8 +708,8 @@ function renderVisao() {
     }
 
     const semId = 'vs_' + i;
-    const obj = sem['🎯 Objetivo Central'] || sem['Objetivo Central'] || '—';
-    const res = sem['✅ Resultado Esperado'] || sem['Resultado Esperado'] || '—';
+    const obj = sem['🎯 Objetivo Central'] || sem['Objetivo Central'] || Object.entries(sem).find(([k])=>k.includes('Objetivo'))?.[1] || '—';
+    const res = sem['✅ Resultado Esperado'] || sem['Resultado Esperado'] || Object.entries(sem).find(([k])=>k.includes('Resultado'))?.[1] || '—';
     const tarefasDaSemana = TAREFAS.filter(t => t.Semana === sem.Semana);
     const totalT = tarefasDaSemana.length;
     const finT = tarefasDaSemana.filter(t => t.Status === 'Finalizada').length;
